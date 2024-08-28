@@ -1,15 +1,34 @@
 package pkg
 
 import (
-	"unsafe"
+	"golang.org/x/sys/unix"
+	"syscall"
 )
 
-const ShmId = uintptr(1234)
-const Size = unsafe.Sizeof(Message{})
+func AccessSharedMemory() (uintptr, error) {
+	id, _, err := syscall.Syscall(syscall.SYS_SHMGET,
+		ShmId, Size, 0666)
+	if err != 0 {
+		return 0, err
+	}
+	addr, _, err := syscall.Syscall(syscall.SYS_SHMAT, id, 0, 0)
+	if err != 0 {
+		return 0, err
+	}
+	return addr, nil
+}
 
-// Message is writen by producer and read by consumer by the IPC via sharing memeory way
-type Message struct {
-	// note that the flexible 'int' type cannot be used here
-	Field1 int32
-	Field2 [10]byte
+func CreateSharedMemory() (uintptr, error) {
+	id, _, err := syscall.Syscall(syscall.SYS_SHMGET,
+		ShmId,
+		Size,
+		unix.IPC_CREAT|0666)
+	if err != 0 {
+		return 0, err
+	}
+	addr, _, err := syscall.Syscall(syscall.SYS_SHMAT, id, 0, 0)
+	if err != 0 {
+		return 0, err
+	}
+	return addr, nil
 }

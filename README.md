@@ -17,3 +17,26 @@ the certain memory slot.
 2024/08/28 14:41:46 Field1: 0, Field2:
 ```
 
+### Array
+
+The shm slot will be reserved for a long time until you clean it, 
+the array fields will be default if there isn't a real structure stays there.
+
+```
+the whole array are:
+        Field1: 0, Field2: producer
+        Field1: 0, Field2: producer
+the whole array are:
+        Field1: 1, Field2: producer
+        Field1: 1, Field2: producer
+the whole array are:
+        Field1: 0, Field2: 
+        Field1: 0, Field2:
+```
+
+### Further Steps
+
+- a biggest structure with `exist` flag
+- a slice hold inside the structure
+- function as a field
+- structure that hold a pointer

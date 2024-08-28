@@ -7,7 +7,6 @@ import (
 	"unsafe"
 
 	"github.com/xieyuschen/ipc-shm/pkg"
-	"golang.org/x/sys/unix"
 )
 
 func main() {
@@ -16,7 +15,7 @@ func main() {
 	}
 	copy(msg.Field2[:], "producer")
 
-	addr, err := createSharedMemory()
+	addr, err := pkg.CreateSharedMemory()
 	beginningAddr := addr
 	defer func() {
 		_, _, err = syscall.Syscall(syscall.SYS_SHMDT, beginningAddr, 0, 0)
@@ -26,31 +25,20 @@ func main() {
 		panic(err)
 	}
 
-	for i := 0; ; i++ {
-		fmt.Println("write a new structure:", i)
+	for i := 0; i < 2; i++ {
 		msg.Field1 = int32(i)
-		writeToSharedMemory(addr, msg)
-		addr += pkg.Size
+		input := pkg.MessageFixedBatch{msg, msg}
+		writeToSharedMemory(addr, input)
+		addr += unsafe.Sizeof(pkg.MessageFixedBatch{})
 		time.Sleep(time.Second)
+		fmt.Println("write a new structure:", i)
+	}
+	for {
+
 	}
 }
 
-func createSharedMemory() (uintptr, error) {
-	id, _, err := syscall.Syscall(syscall.SYS_SHMGET,
-		pkg.ShmId,
-		pkg.Size,
-		unix.IPC_CREAT|0666)
-	if err != 0 {
-		return 0, err
-	}
-	addr, _, err := syscall.Syscall(syscall.SYS_SHMAT, id, 0, 0)
-	if err != 0 {
-		return 0, err
-	}
-	return addr, nil
-}
-
-func writeToSharedMemory(addr uintptr, s pkg.Message) {
-	ptr := (*pkg.Message)(unsafe.Pointer(addr))
+func writeToSharedMemory(addr uintptr, s pkg.MessageFixedBatch) {
+	ptr := (*pkg.MessageFixedBatch)(unsafe.Pointer(addr))
 	*ptr = s
 }

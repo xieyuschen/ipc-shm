@@ -1,8 +1,7 @@
 package main
 
 import (
-	"log"
-	"syscall"
+	"fmt"
 	"time"
 	"unsafe"
 
@@ -14,33 +13,25 @@ import (
 // 		which is retrieved from the shm
 
 func main() {
-	addr, err := accessSharedMemory()
+	addr, err := pkg.AccessSharedMemory()
 	if err != nil {
 		panic(err)
 	}
 
 	for {
 		v := readFromSharedMemory(addr)
-		addr += pkg.Size
-		log.Printf("Field1: %d, Field2: %s\n", v.Field1, v.Field2)
+		addr += unsafe.Sizeof(pkg.MessageFixedBatch{})
+		fmt.Println("the whole array are:")
+		for _, msg := range v {
+
+			fmt.Printf("	Field1: %d, Field2: %s\n", msg.Field1, msg.Field2)
+		}
+
 		time.Sleep(time.Second)
 	}
 }
 
-func accessSharedMemory() (uintptr, error) {
-	id, _, err := syscall.Syscall(syscall.SYS_SHMGET,
-		pkg.ShmId, pkg.Size, 0666)
-	if err != 0 {
-		return 0, err
-	}
-	addr, _, err := syscall.Syscall(syscall.SYS_SHMAT, id, 0, 0)
-	if err != 0 {
-		return 0, err
-	}
-	return addr, nil
-}
-
-func readFromSharedMemory(addr uintptr) pkg.Message {
-	ptr := (*pkg.Message)(unsafe.Pointer(addr))
+func readFromSharedMemory(addr uintptr) pkg.MessageFixedBatch {
+	ptr := (*pkg.MessageFixedBatch)(unsafe.Pointer(addr))
 	return *ptr
 }
